@@ -1,69 +1,135 @@
 ```mermaid
-graph TD
-    %% --- STYLING ---
-    classDef gemini fill:#e8f0fe,stroke:#4285f4,stroke-width:2px,color:#000;
-    classDef memory fill:#fce8e6,stroke:#ea4335,stroke-width:2px,color:#000;
-    classDef action fill:#e6f4ea,stroke:#34a853,stroke-width:2px,color:#000;
-    classDef critical fill:#fef7e0,stroke:#fbbc04,stroke-width:2px,stroke-dasharray: 5 5,color:#000;
+graph LR
+    %% --- STYLING & PALETTE (High Contrast for Judges) ---
+    classDef sensing fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000,font-weight:bold
+    classDef analysis fill:#e1f5fe,stroke:#0277bd,stroke-width:3px,color:#000,font-weight:bold
+    classDef core fill:#e8f0fe,stroke:#1565c0,stroke-width:4px,color:#000,font-weight:bold,font-size:14px
+    classDef memory fill:#fff8e1,stroke:#fbc02d,stroke-width:3px,color:#000,font-weight:bold
+    classDef action fill:#e6f4ea,stroke:#2e7d32,stroke-width:3px,color:#000,font-weight:bold
+    classDef critical fill:#ffebee,stroke:#c62828,stroke-width:3px,stroke-dasharray: 5 5,color:#000,font-weight:bold
+    classDef user fill:#e0f7fa,stroke:#006064,stroke-width:3px,color:#000,shape:circle,font-weight:bold
 
-    %% --- LAYER 1: VIBE-AWARE SENSING (INPUTS) ---
-    subgraph "Layer 1: Omni-Sensing & Context"
-        Ingest["Omni-Ingest<br/>(Syllabi, Emails, Portal)"] -->|Raw Data| Cache[("Context Cache<br/>(1M Token Window)")]
-        Live["Gemini Live Interface<br/>(Voice/Video/Chat)"] -->|Audio Tone/Speed| Vibe["Vibe Telemetry<br/>(Anxiety/Fatigue)"]
-        Live -->|Visuals| Vision["Visual Context<br/>(Messy Desk/Textbooks)"]
-        Live -->|Explicit Statement| Health["Health State<br/>(Sick/Recovering)"]
+    %% --- LAYER 1: SENSING (INPUTS) ---
+    subgraph Layer1 [Layer 1: Multimodal Sensing]
+        direction TB
+        Student((Student)):::user --> Inputs
         
-        UserAmbition["User Ambition Vector<br/>(Goals: A+ vs Pass)"] --> Core
-        Constraints["Hard Constraints<br/>(Job, Visa, Sleep)"] --> Core
+        subgraph Inputs [Input Channels]
+            direction TB
+            Drive[Drive Ingestion<br/>Syllabi]:::sensing
+            Device[Device Stats<br/>Focus/Drift]:::sensing
+            Vision[Visual Context<br/>Camera]:::sensing
+            Voice[Voice/Chat<br/>Wake Word]:::sensing
+        end
+        
+        Meaning[Meaning Anchor<br/>Visa/Scholarship]:::critical
+        Health[Health State<br/>Sick/Recovering]:::critical
+        
+        Inputs --> Fusion[Sensing Engine<br/>Multimodal Fusion]:::sensing
+        Meaning --> Fusion
+        Health --> Fusion
     end
 
-    %% --- LAYER 2: GEMINI 3 REASONING CORE (BRAIN) ---
-    subgraph "Layer 2: The Strategist (Gemini 3 Pro)"
-        Cache --> Core
-        Vibe --> Core
-        Vision --> Core
-        Health --> Core
+    %% --- LAYER 2: ANALYSIS ---
+    subgraph Layer2 [Layer 2: State Analysis]
+        direction TB
+        Fusion --> AnalysisNodes
         
-        Core["Gemini Reasoning Core<br/>(Thinking Level: HIGH)"]:::gemini
-        Core -->|Proposed Plan| Simulator{"Deep Think<br/>Simulator"}:::gemini
+        subgraph AnalysisNodes [Classifiers & Policy]
+            direction TB
+            Stakes[Stakes Classifier<br/>Loss Impact]:::analysis
+            Pressure[Pressure Map<br/>Load vs Capacity]:::analysis
+            Tracker[Engagement Tracker<br/>Behavior Trends]:::analysis
+            PrivacyPolicy[Consent & Policy Engine]:::analysis
+        end
         
-        Simulator -->|High Failure Probability| Core
-        Simulator -->|Viable Plan| DecisionMatrix{"Decision Matrix<br/>(Pressure vs. Stakes)"}
+        Offline[Offline Fallback<br/>Edge Mode]:::critical
+        Fusion -.->|Network Loss| Offline
     end
 
-    %% --- LAYER 3: GOVERNANCE & MEMORY (SAFETY) ---
-    subgraph "Layer 3: Governance & Thought Vault"
-        MetaAuditor["Meta-Cognitive Auditor<br/>(Velocity Score)"]:::memory --> Core
-        
-        ThoughtVault[("Thought Signature<br/>Vault")]:::memory
-        Core -.->|Log Reasoning| ThoughtVault
-        
-        %% The Rejection Loop (The "Marathon" Feature)
-        RejectionEvent(("Emergency<br/>Override")):::critical -->|Tag: TOXIC PATTERN| ThoughtVault
-        ThoughtVault -->|Block Bad Logic| Core
+    %% --- DATABASE MEMORY (Explicit) ---
+    subgraph LayerMemory [Database Memory]
+        direction TB
+        Cache[(Context Cache<br/>1M Token)]:::memory
+        History[(Adaptive Memory<br/>User Model)]:::memory
+        Vault[(AntiPattern Vault<br/>Bad Patterns)]:::memory
+        AuditLog[(Audit Log<br/>Transparency)]:::memory
+        ImpactMetrics[(Impact Metrics<br/>Success)]:::memory
     end
 
-    %% --- LAYER 4: ADAPTIVE ACTION (EXECUTION) ---
-    subgraph "Layer 4: Execution & Resilience"
-        DecisionMatrix -->|Low Pressure| Routine["Routine Mode<br/>(Proactive Growth)"]
-        DecisionMatrix -->|High Pressure| Crisis["Crisis Mode<br/>(Curriculum Triage)"]
+    %% --- LAYER 3: REASONING CORE ---
+    subgraph Layer3 [Layer 3: Gemini Reasoning]
+        direction TB
+        AnalysisNodes --> Core
         
-        Routine --> Prep["Resource Orchestrator<br/>(Fetch Full Readings)"]:::action
-        Crisis --> Triage["Compression Engine<br/>(Generate Audio Summaries)"]:::action
+        Cache <--> Core
+        History <--> Core
+        Vault <--> Core
+        ImpactMetrics -->|Optimization Loop| Core
         
-        Prep --> Negot["Negotiator"]
-        Triage --> Negot["Negotiator"]
+        Core[Gemini Reasoning Core<br/>Long-Context + Tools]:::core
         
-        Negot["Gemini Live Negotiator<br/>(Persuasive Coach)"]:::gemini --> UserAction(("User Action"))
+        Core --> Simulator{Deep Think<br/>Simulator}:::core
+        Simulator -->|High Risk| Core
+        Simulator -->|Viable| Matrix{Decision Matrix<br/>Pressure vs Stakes}:::core
         
-        UserAction -->|Success| Mastery["Concept Mastery Check"]
-        UserAction -->|Fail/Refuse| RejectionEvent
-        
-        Mastery -->|Score Update| MetaAuditor
+        Core --> Explain[Explainability<br/>Why This Plan?]:::core
+        Core -.-> AuditLog
+        Core -.->|Model Degraded| Offline
+        AuditLog --> ImpactMetrics
     end
 
-    %% --- CONNECTIONS ---
-    class Core,Simulator,Negot gemini;
-    class ThoughtVault,Cache,MetaAuditor,Cache memory;
-    class Prep,Triage,Routine,Crisis action;
-    class RejectionEvent,Health critical;
+    %% --- LAYER 4: EXECUTION MODES ---
+    subgraph Layer4 [Layer 4: Execution Modes]
+        direction TB
+        
+        Matrix -->|Low Pressure| Routine[Routine Mode<br/>Proactive]:::action
+        Routine --> Prep[Resource Orchestrator<br/>Fetch Readings]:::action
+        Prep --> Curric[Auto-Curriculum<br/>Builder]:::action
+        
+        Matrix -->|High Pressure| Crisis[Crisis Mode<br/>Reactive]:::critical
+        Crisis --> Triage[Compression Engine<br/>Audio Summaries]:::critical
+        
+        Matrix -->|Panic| Safety[Safety Net]:::critical
+        Safety --> Alert[Peer Alert]:::critical
+    end
+
+    %% --- LAYER 5: INTERACTION LOOP ---
+    subgraph Layer5 [Layer 5: Interaction]
+        direction TB
+        Curric --> Live
+        Triage --> Live
+        Explain --> Live
+        
+        Live[Gemini Live Negotiator<br/>Real-time Persona]:::core
+        Live --> UserDecision{Accepts?}:::user
+        
+        UserDecision -->|NO| Trust[Trust Calibration]:::memory
+        Trust --> Vault
+        
+        UserDecision -->|YES| Enforce[App Lock Service]:::action
+        Enforce --> Action((Execute<br/>Study)):::action
+        
+        Action --> Check{Knowledge<br/>Check}:::analysis
+        Check -->|Pass| Reward[Unlock Rewards]:::action
+        Reward --> Mastery[Mastery Evaluator]:::action
+        Mastery --> Update[Success Update]:::memory
+        Update --> History
+        
+        Check -->|Fail| Recovery[Spaced Recovery]:::action
+        Recovery --> Prep
+    end
+
+    %% --- BOLD CONNECTIONS ---
+    Fusion ==>|Context| Stakes
+    Fusion ==>|Context| Pressure
+    Fusion ==>|Context| Tracker
+    
+    Offline -.->|Sync| History
+    
+    linkStyle default stroke-width:4px,fill:none,stroke:#333
+    Fusion -->|Context| Tracker
+    
+    Offline -.->|Sync| History
+    
+    linkStyle default stroke-width:3px,fill:none,stroke:#555
