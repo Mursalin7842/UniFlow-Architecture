@@ -137,29 +137,30 @@ graph TD
     %% === CONNECTION DEFINITIONS ===
     %% ==========================================================
     
-    %% -- 0. Identity Flow --
-    Student --> Auth --> Session
+    %% -- 0. Identity Flow (0-6) --
+    Student --> Auth
+    Auth --> Session
     Session --> Inputs
     Session --> Meaning
     Session --> Health
     Session --> OverrideFlag
     Session --> PrivacyPolicy
 
-    %% -- 1. Standard Flow --
+    %% -- 1. Standard Flow (7-11) --
     Inputs --> Fusion
     Meaning --> Fusion
     Health --> Fusion
     OverrideFlag --> Fusion
     Fusion --> AnalysisNodes
     
-    %% -- 2. Critical Fallbacks --
+    %% -- 2. Critical Fallbacks (12-13) --
     Fusion -.->|Network Loss| Offline
     BudgetGuard -.->|Throttle/Cost| Offline
     
-    %% -- 3. Analysis -> Core --
+    %% -- 3. Analysis -> Core (14) --
     AnalysisNodes --> Core
     
-    %% -- 4. Memory I/O & Learning Loop --
+    %% -- 4. Memory I/O & Learning Loop (15-22) --
     Cache <--> Core
     History <--> Core
     Vault <--> Core
@@ -169,7 +170,7 @@ graph TD
     MotivationIndex --> PolicyLearner
     PolicyLearner -->|Optimization| Core
     
-    %% -- 5. Core Logic Loops --
+    %% -- 5. Core Logic Loops (23-34) --
     Core --> BudgetGuard
     BudgetGuard --> Simulator
     Simulator -->|High Risk| Core
@@ -183,7 +184,7 @@ graph TD
     Core -.->|Model Degraded| Offline
     AuditLog --> ImpactMetrics
     
-    %% -- 6. Execution Decisions & Capability Gate --
+    %% -- 6. Execution Decisions & Capability Gate (35-44) --
     Matrix -->|Low Pressure| Routine
     Matrix -->|High Pressure| Crisis
     Matrix -->|Panic| Safety
@@ -197,19 +198,17 @@ graph TD
     CapabilityGate --> Prep
     CapabilityGate --> Enforce
     
-    %% -- 7. Mode Actions --
+    %% -- 7. Mode Actions (45-48) --
     Prep --> Personalize
     Personalize --> Curric
-    
     Triage --> Personalize
-    
     Safety --> Alert
     
-    %% -- 8. Interaction Setup --
+    %% -- 8. Interaction Setup (49-50) --
     Curric --> Live
     Personalize --> Live
     
-    %% -- 9. User Interaction Loop --
+    %% -- 9. User Interaction Loop (51-56) --
     Live --> UserDecision
     UserDecision -->|NO| Trust
     Trust --> Vault
@@ -217,7 +216,7 @@ graph TD
     Enforce --> Action
     Action --> Check
     
-    %% -- 10. Outcomes --
+    %% -- 10. Outcomes (57-63) --
     Check -->|Pass| Reward
     Reward --> Mastery
     Mastery --> Update
@@ -226,7 +225,7 @@ graph TD
     Check -->|Fail| Recovery
     Recovery --> Prep
 
-    %% -- 11. Thick Context Links --
+    %% -- 11. Thick Context Links (64-68) --
     Fusion ==Context==> Stakes
     Fusion ==Context==> Pressure
     Fusion ==Context==> Tracker
@@ -237,8 +236,20 @@ graph TD
     %% === STYLING ===
     %% ==========================
 
-    %% Generic link style
-    linkStyle default stroke-width:3px,fill:none,stroke:#2e7d32,color:#2e7d32
+    %% Generic link style (NEON GREEN for Standard/Pass/Routine)
+    linkStyle default stroke-width:3px,fill:none,stroke:#00E676,color:#00E676
+
+    %% --- NEON RED (Critical / Fail / Risk / Crisis) ---
+    %% Indices: 12, 13, 25, 27, 28, 33, 36, 37, 39, 40, 48, 52, 62
+    linkStyle 12,13,25,27,28,33,36,37,39,40,48,52,62 stroke:#FF1744,stroke-width:3px,color:#FF1744
+
+    %% --- NEON BLUE (Memory / Data / Logs / Feedback) ---
+    %% Indices: 15-22, 29, 32, 34, 42, 53, 60, 61, 68
+    linkStyle 15,16,17,18,19,20,21,22,29,32,34,42,53,60,61,68 stroke:#2979FF,stroke-width:3px,color:#2979FF
+
+    %% --- NEON PURPLE (Thick Context Lines) ---
+    %% Indices: 64, 65, 66, 67
+    linkStyle 64,65,66,67 stroke:#D500F9,stroke-width:5px,color:#D500F9
 
     %% Subgraph styling
     style Layer0 fill:#ffffff,stroke:#333,stroke-width:2px
@@ -253,7 +264,3 @@ graph TD
     style Context fill:#ffebee,stroke:#ef9a9a,stroke-width:2px,stroke-dasharray: 3 3
     style InputZone fill:none,stroke:none
     style Tools fill:#ffffff,stroke:#7b1fa2,stroke-width:2px
-    style Layer4 fill:#f1f8e9,stroke:#e6f4ea,stroke-width:2px
-    style Layer5 fill:#e0f2f1,stroke:#b2dfdb,stroke-width:2px
-    style LayerMemory fill:#fffde7,stroke:#fff9c4,stroke-width:2px,stroke-dasharray: 5 5
-    linkStyle 41 stroke:#7b1fa2,stroke-width:2px,stroke-dasharray: 2 2
