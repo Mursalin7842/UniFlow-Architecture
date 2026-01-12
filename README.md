@@ -2,8 +2,6 @@
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e3f2fd', 'edgeLabelBackground':'#ffffff', 'tertiaryColor': '#fdfefe'}}}%%
 graph TD
     %% --- STYLING & PALETTE ---
-    %% Increased font-size to 20px for all nodes to make shapes bigger and text readable
-    %% Increased stroke-width to 4px/5px for bold outlines
     classDef sensing fill:#f3e5f5,stroke:#7b1fa2,stroke-width:4px,color:#000,font-weight:bold,rx:5,ry:5,font-size:20px
     classDef analysis fill:#e1f5fe,stroke:#0277bd,stroke-width:4px,color:#000,font-weight:bold,rx:5,ry:5,font-size:20px
     classDef core fill:#e8f0fe,stroke:#1565c0,stroke-width:5px,color:#000,font-weight:bold,font-size:20px,rx:5,ry:5
@@ -12,12 +10,19 @@ graph TD
     classDef critical fill:#ffebee,stroke:#c62828,stroke-width:4px,stroke-dasharray: 5 5,color:#000,font-weight:bold,rx:5,ry:5,font-size:20px
     classDef user fill:#e0f7fa,stroke:#006064,stroke-width:4px,color:#000,shape:circle,font-weight:bold,font-size:20px
 
+    %% --- LAYER 0: IDENTITY ---
+    subgraph Layer0 [Layer 0: Identity & Access]
+        direction TB
+        Student((Student)):::user
+        Auth[Auth & Identity<br/>OAuth / Passkey]:::analysis
+        Session[Session Manager<br/>Trust + TTL]:::analysis
+    end
+
     %% --- LAYER 1: SENSING (INPUTS) ---
     subgraph Layer1 [Layer 1: Multimodal Sensing]
         direction TB
-        Student((Student)):::user
         
-        %% Grouping Inputs and Context side-by-side to reduce vertical whitespace
+        %% Grouping Inputs and Context side-by-side
         subgraph InputZone [ ]
             direction LR
             style InputZone fill:none,stroke:none
@@ -63,7 +68,9 @@ graph TD
         %% --- LAYER 3: REASONING CORE ---
         subgraph Layer3 [Layer 3: Gemini Reasoning]
             direction TB
-            Core[Gemini Reasoning Core<br/>Long-Context + Tools]:::core
+            PolicyLearner[Policy Learner<br/>Outcome Optimization]:::analysis
+            Core[Gemini 3 Pro Reasoning Core<br/>Long-Context + Tools]:::core
+            BudgetGuard[Cost & Rate Guard<br/>Token / Latency]:::analysis
             Simulator{Deep Think<br/>Simulator}:::core
             Matrix{Decision Matrix<br/>Pressure vs Stakes}:::core
             Explain[Explainability<br/>Why This Plan?]:::core
@@ -74,6 +81,15 @@ graph TD
         subgraph Layer4 [Layer 4: Execution Modes]
             direction TB
             
+            CapabilityGate[Capability Gate<br/>Tool Allowlist]:::critical
+            
+            subgraph Tools [External Tools]
+                direction LR
+                CalendarAPI[Calendar API]:::action
+                FileSystem[File System]:::action
+                NotificationSvc[Notification Service]:::action
+            end
+
             Personalize[Personalization Engine<br/>Modality & Tone Pref]:::core
 
             subgraph ModeBranch [Decision Branches]
@@ -110,63 +126,86 @@ graph TD
         Cache[(Context Cache<br/>1M Token)]:::memory
         History[(Adaptive Memory<br/>User Model)]:::memory
         Vault[(AntiPattern Vault<br/>Bad Patterns)]:::memory
+        HorizonMemory[(Long-Horizon State<br/>Days/Weeks)]:::memory
         AuditLog[(Audit Log<br/>Transparency)]:::memory
+        NoActionLog[Non-Action Reason Log]:::memory
         ImpactMetrics[(Impact Metrics<br/>Success)]:::memory
         MotivationIndex[(Motivation Health<br/>Burnout/Reward)]:::memory
     end
 
     %% ==========================================================
-    %% === CONNECTION DEFINITIONS & STYLING ===
+    %% === CONNECTION DEFINITIONS ===
     %% ==========================================================
     
-    %% -- 1. Standard Flow (Layer 1 -> 2) --
-    Student --> Inputs
+    %% -- 0. Identity Flow --
+    Student --> Auth --> Session
+    Session --> Inputs
+    Session --> Meaning
+    Session --> Health
+    Session --> OverrideFlag
+    Session --> PrivacyPolicy
+
+    %% -- 1. Standard Flow --
     Inputs --> Fusion
     Meaning --> Fusion
     Health --> Fusion
     OverrideFlag --> Fusion
     Fusion --> AnalysisNodes
     
-    %% -- 2. Critical Fallbacks (Layer 2) --
+    %% -- 2. Critical Fallbacks --
     Fusion -.->|Network Loss| Offline
+    BudgetGuard -.->|Throttle/Cost| Offline
     
-    %% -- 3. Analysis -> Core (Layer 2 -> 3) --
+    %% -- 3. Analysis -> Core --
     AnalysisNodes --> Core
     
-    %% -- 4. Memory I/O (Blue Logic) --
+    %% -- 4. Memory I/O & Learning Loop --
     Cache <--> Core
     History <--> Core
     Vault <--> Core
     MotivationIndex <--> Core
-    ImpactMetrics -->|Optimization| Core
+    HorizonMemory <--> Core
+    ImpactMetrics --> PolicyLearner
+    MotivationIndex --> PolicyLearner
+    PolicyLearner -->|Optimization| Core
     
     %% -- 5. Core Logic Loops --
-    Core --> Simulator
+    Core --> BudgetGuard
+    BudgetGuard --> Simulator
     Simulator -->|High Risk| Core
     Simulator -->|Viable| Confidence
     Confidence -->|Low Confidence| Explain
+    Confidence -->|Abort| NoActionLog
+    NoActionLog --> AuditLog
     Confidence -->|High Confidence| Matrix
     Explain --> Live
     Core -.-> AuditLog
     Core -.->|Model Degraded| Offline
     AuditLog --> ImpactMetrics
     
-    %% -- 6. Execution Decisions (Layer 3 -> 4) --
+    %% -- 6. Execution Decisions & Capability Gate --
     Matrix -->|Low Pressure| Routine
     Matrix -->|High Pressure| Crisis
     Matrix -->|Panic| Safety
     
+    Routine --> CapabilityGate
+    Crisis --> CapabilityGate
+    OverrideFlag --> CapabilityGate
+    
+    CapabilityGate --> Tools
+    Tools -.->|Data Return| Core
+    CapabilityGate --> Prep
+    CapabilityGate --> Enforce
+    
     %% -- 7. Mode Actions --
-    Routine --> Prep
     Prep --> Personalize
     Personalize --> Curric
     
-    Crisis --> Triage
     Triage --> Personalize
     
     Safety --> Alert
     
-    %% -- 8. Interaction Setup (Layer 4 -> 5) --
+    %% -- 8. Interaction Setup --
     Curric --> Live
     Personalize --> Live
     
@@ -188,40 +227,21 @@ graph TD
     Recovery --> Prep
 
     %% -- 11. Thick Context Links --
-    Fusion ==>|Context| Stakes
-    Fusion ==>|Context| Pressure
-    Fusion ==>|Context| Tracker
-    Fusion ==>|Context| GoalHorizon
+    Fusion ==Context==> Stakes
+    Fusion ==Context==> Pressure
+    Fusion ==Context==> Tracker
+    Fusion ==Context==> GoalHorizon
     Offline -.->|Sync| History
 
     %% ==========================
-    %% === LINK STYLING RULES ===
+    %% === STYLING ===
     %% ==========================
 
-    %% DEFAULT: GREEN (Standard Flow) - Increased to 4px
-    linkStyle default stroke-width:4px,fill:none,stroke:#2e7d32,color:#2e7d32
+    %% Generic link style
+    linkStyle default stroke-width:3px,fill:none,stroke:#2e7d32,color:#2e7d32
 
-    %% RED PATHS (Critical / Fail / Alert) - Increased to 4px or 5px
-    linkStyle 6 stroke:#c62828,stroke-width:4px,stroke-dasharray: 5 5
-    linkStyle 16 stroke:#c62828,stroke-width:4px,stroke-dasharray: 5 5
-    linkStyle 17 stroke:#c62828,stroke-width:4px,stroke-dasharray: 5 5
-    linkStyle 20,21 stroke:#c62828,stroke-width:5px
-    linkStyle 25 stroke:#c62828,stroke-width:4px
-    linkStyle 28 stroke:#c62828,stroke-width:4px
-    linkStyle 33 stroke:#c62828,stroke-width:4px
-    linkStyle 43 stroke:#c62828,stroke-width:4px,stroke-dasharray: 5 5
-
-    %% BLUE PATHS (Memory / Data / Logging) - Increased to 3px/4px
-    linkStyle 8,9,10,11 stroke:#1565c0,stroke-width:3px,stroke-dasharray: 3 3
-    linkStyle 12,18,19 stroke:#1565c0,stroke-width:3px,stroke-dasharray: 3 3
-    linkStyle 34,41 stroke:#1565c0,stroke-width:3px,stroke-dasharray: 3 3
-    linkStyle 42 stroke:#1565c0,stroke-width:3px,stroke-dasharray: 3 3
-    linkStyle 48 stroke:#1565c0,stroke-width:3px,stroke-dasharray: 3 3
-
-    %% BOLD CONTEXT LINES (Purple/Teal) - Increased to 6px
-    linkStyle 44,45,46,47 stroke:#7b1fa2,stroke-width:6px
-
-    %% ZONE STYLING
+    %% Subgraph styling
+    style Layer0 fill:#ffffff,stroke:#333,stroke-width:2px
     style Layer1 fill:#fcf8fd,stroke:#f3e5f5,stroke-width:2px
     style Layer2 fill:#eef9fe,stroke:#e1f5fe,stroke-width:2px
     style Layer3 fill:#f4f8fe,stroke:#e8f0fe,stroke-width:2px
@@ -229,10 +249,10 @@ graph TD
     style Layer5 fill:#e0f2f1,stroke:#b2dfdb,stroke-width:2px
     style LayerMemory fill:#fffde7,stroke:#fff9c4,stroke-width:2px,stroke-dasharray: 5 5
 
-    %% Specific Subgraph Styling for Layer 1 Inputs
     style Inputs fill:#ede7f6,stroke:#b39ddb,stroke-width:2px,stroke-dasharray: 3 3
     style Context fill:#ffebee,stroke:#ef9a9a,stroke-width:2px,stroke-dasharray: 3 3
     style InputZone fill:none,stroke:none
+    style Tools fill:#ffffff,stroke:#7b1fa2,stroke-width:2px
     style Layer4 fill:#f1f8e9,stroke:#e6f4ea,stroke-width:2px
     style Layer5 fill:#e0f2f1,stroke:#b2dfdb,stroke-width:2px
     style LayerMemory fill:#fffde7,stroke:#fff9c4,stroke-width:2px,stroke-dasharray: 5 5
